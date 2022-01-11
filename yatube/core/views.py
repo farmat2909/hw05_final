@@ -7,7 +7,12 @@ def page_not_found(request, exception):
     context = {
         'path': request.path
     }
-    return render(request, template, context, status=HTTPStatus.OK)
+    return render(
+        request,
+        template,
+        context,
+        status=HTTPStatus.NOT_FOUND
+    )
 
 
 def csrf_failure(request, reason=''):

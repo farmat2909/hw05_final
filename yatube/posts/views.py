@@ -152,7 +152,7 @@ def profile_follow(request, username):
     follower = get_object_or_404(User, username=request.user)
     following = get_object_or_404(User, username=username)
     if following != request.user:
-        Follow.objects.create(user=follower, author=following)
+        Follow.objects.update_or_create(user=follower, author=following)
         return redirect('posts:follow_index')
     return redirect('posts:profile', username)
 
