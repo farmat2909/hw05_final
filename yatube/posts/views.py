@@ -1,7 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 
-
 from .models import Follow, Group, Post, User
 from .forms import PostForm, CommentForm
 from core.paginator_custome import paginator_for_posts
@@ -152,7 +151,7 @@ def profile_follow(request, username):
     follower = get_object_or_404(User, username=request.user)
     following = get_object_or_404(User, username=username)
     if following != request.user:
-        Follow.objects.update_or_create(user=follower, author=following)
+        Follow.objects.get_or_create(user=follower, author=following)
         return redirect('posts:follow_index')
     return redirect('posts:profile', username)
 
@@ -162,6 +161,6 @@ def profile_unfollow(request, username):
     """Отписаться от автора."""
     follower = get_object_or_404(User, username=request.user)
     following = get_object_or_404(User, username=username)
-    author = Follow.objects.get(user=follower, author=following)
+    author = get_object_or_404(Follow, user=follower, author=following)
     author.delete()
     return redirect('posts:profile', username)

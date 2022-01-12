@@ -87,6 +87,13 @@ class PostsFormTests(TestCase):
             reverse('users:login'),
             reverse('posts:post_create')
         )
+        self.redirect_url_comment = (
+            reverse('users:login'),
+            reverse(
+                'posts:add_comment',
+                args=[PostsFormTests.post.id]
+            )
+        )
 
     def test_create_post(self):
         """Если форма валидна, создается новый пост."""
@@ -174,10 +181,28 @@ class PostsFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        comment = posts_comments.comments.all()
+        comment = posts_comments.comments.first()
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertRedirects(
             response,
             reverse(self.post_detail_page[0], args=[self.post_detail_page[1]])
         )
-        self.assertEqual(comment[0].text, form_data['text'])
+        self.assertEqual(comment.text, form_data['text'])
+
+    def test_not_add_comment_guest(self):
+        """Комментарий не создается неавторизованным пользователем."""
+        posts_comments = Post.objects.get(id=PostsFormTests.post.id)
+        form_data = {
+            'text': 'Тестовый комментарий',
+        }
+        response = self.guest_client.post(
+            reverse(self.add_comment_page[0], args=[self.add_comment_page[1]]),
+            data=form_data,
+            follow=True
+        )
+        comment = posts_comments.comments.first()
+        self.assertFalse(comment, False)
+        self.assertRedirects(
+            response,
+            f'{self.redirect_url_comment[0]}?next={self.redirect_url_comment[1]}'
+        )

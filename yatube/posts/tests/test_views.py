@@ -414,6 +414,7 @@ class PaginatorViewsTest(TestCase):
             (1, self.first_page_posts),
             (2, self.next_page_posts),
         ]
+        cache.clear()
 
     def test_pages_paginate(self):
         """Проверка количество постов на страницах"""
