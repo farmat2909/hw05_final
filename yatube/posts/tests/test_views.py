@@ -190,7 +190,6 @@ class PostsPagesTests(TestCase):
         response = self.authorized_client.get(
             reverse(self.index_page[1])
         )
-        print(response.content.decode('utf-8'))
         self.assertIn(
             PostsPagesTests.post.text, response.content.decode('utf-8')
         )
@@ -303,10 +302,12 @@ class PostsPagesTests(TestCase):
                 self.assertIsInstance(form_field, expected)
         self.assertTrue(response.context.get('is_edit'))
 
-    """Я понял задание так, что мы проверяем пост автора в ленте у пользователя
+    """Я понял задание так, что мы проверяем пост автора
+    в ленте у пользователя
     на странице follow_index. Мы во view follow_index передаем в контекст
-    посты и значит для проверки должны достать их из контекста и сравнить с постом
-    автора на кого подписаны. Ранее я тестировал follow_index только в тесте проверки 
+    посты и значит для проверки должны достать их из контекста и сравнить
+    с постом автора на кого подписаны. Ранее я тестировал follow_index
+    только в тесте проверки
     на корректный шаблон.
     Не понимаю как тестировать согласно замечанию."""
     def test_follow_page_show_correct_context_follower(self):

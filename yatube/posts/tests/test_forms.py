@@ -177,7 +177,9 @@ class PostsFormTests(TestCase):
             'text': 'Тестовый комментарий',
         }
         response = self.authorized_client.post(
-            reverse(self.add_comment_page[0], args=[self.add_comment_page[1]]),
+            reverse(
+                self.add_comment_page[0], args=[self.add_comment_page[1]]
+            ),
             data=form_data,
             follow=True
         )
@@ -204,5 +206,6 @@ class PostsFormTests(TestCase):
         self.assertFalse(comment, False)
         self.assertRedirects(
             response,
-            f'{self.redirect_url_comment[0]}?next={self.redirect_url_comment[1]}'
+            f'{self.redirect_url_comment[0]}'
+            f'?next={self.redirect_url_comment[1]}'
         )
