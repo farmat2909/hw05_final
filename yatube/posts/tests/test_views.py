@@ -1,6 +1,7 @@
 import shutil
 import tempfile
 
+from http import HTTPStatus
 from django import forms
 from django.core.cache import cache
 from django.core.cache.utils import make_template_fragment_key
@@ -189,10 +190,10 @@ class PostsPagesTests(TestCase):
         response = self.authorized_client.get(
             reverse(self.index_page[1])
         )
+        print(response.content.decode('utf-8'))
         self.assertIn(
             PostsPagesTests.post.text, response.content.decode('utf-8')
         )
-        print(response.content.decode('utf-8'))
         key = make_template_fragment_key('index_page')
         cache.delete(key)
         response = self.authorized_client.get(
@@ -302,6 +303,12 @@ class PostsPagesTests(TestCase):
                 self.assertIsInstance(form_field, expected)
         self.assertTrue(response.context.get('is_edit'))
 
+    """Я понял задание так, что мы проверяем пост автора в ленте у пользователя
+    на странице follow_index. Мы во view follow_index передаем в контекст
+    посты и значит для проверки должны достать их из контекста и сравнить с постом
+    автора на кого подписаны. Ранее я тестировал follow_index только в тесте проверки 
+    на корректный шаблон.
+    Не понимаю как тестировать согласно замечанию."""
     def test_follow_page_show_correct_context_follower(self):
         """Запись появляется в ленте тех, кто подписан на автора."""
         response = self.authorized_client.get(
@@ -311,13 +318,14 @@ class PostsPagesTests(TestCase):
         post_author_following = Post.objects.filter(
             author__following__user=PostsPagesTests.user
         )
+        post = context_page[0]
         self.assertEqual(*context_page, *post_author_following)
-        self.assertEqual(context_page[0].author, PostsPagesTests.author)
-        self.assertEqual(context_page[0].group, PostsPagesTests.group)
+        self.assertEqual(post.author, PostsPagesTests.author)
+        self.assertEqual(post.group, PostsPagesTests.group)
         self.assertEqual(
-            context_page[0].pub_date, PostsPagesTests.post.pub_date
+            post.pub_date, PostsPagesTests.post.pub_date
         )
-        self.assertEqual(context_page[0].text, PostsPagesTests.post.text)
+        self.assertEqual(post.text, PostsPagesTests.post.text)
 
     def test_follow_page_show_correct_context_unfollower(self):
         """Запись не появляется в ленте тех, кто не подписан на автора."""
@@ -331,13 +339,13 @@ class PostsPagesTests(TestCase):
         """Авторизованный пользователь может подписываться
         на других пользователей.
         """
-        response = self.authorized_client.get(
+        count_follow = Follow.objects.count()
+        response = self.authorized_client_2.get(
             reverse(self.profile_follow[0], args=[self.profile_follow[1]]),
             follow=True
         )
-        Follow.objects.create(
-            user=PostsPagesTests.user, author=PostsPagesTests.author
-        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(Follow.objects.count(), count_follow + 1)
         self.assertRedirects(
             response,
             reverse(self.follow_page[1])
@@ -347,11 +355,13 @@ class PostsPagesTests(TestCase):
         """Авторизованный пользователь может удалять из подписок
         других пользователей.
         """
+        count_follow = Follow.objects.count()
         response = self.authorized_client.get(
             reverse(self.profile_unfollow[0], args=[self.profile_unfollow[1]]),
             follow=True
         )
-        PostsPagesTests.follow.delete()
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(Follow.objects.count(), count_follow - 1)
         self.assertRedirects(
             response,
             reverse(self.profile_page[1], args=[self.profile_page[2]])
