@@ -11,7 +11,6 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.conf import settings
 
-
 from posts.models import Comment, Group, Post, Follow
 
 User = get_user_model()
@@ -173,13 +172,14 @@ class PostsPagesTests(TestCase):
             reverse(self.index_page[1])
         )
         context_page = response.context.get('page_obj').object_list
+        post = context_page[0]
         self.assertEqual(*context_page, PostsPagesTests.post)
-        self.assertEqual(context_page[0].author, PostsPagesTests.author)
-        self.assertEqual(context_page[0].group, PostsPagesTests.group)
+        self.assertEqual(post.author, PostsPagesTests.author)
+        self.assertEqual(post.group, PostsPagesTests.group)
         self.assertEqual(
-            context_page[0].pub_date, PostsPagesTests.post.pub_date
+            post.pub_date, PostsPagesTests.post.pub_date
         )
-        self.assertEqual(context_page[0].text, PostsPagesTests.post.text)
+        self.assertEqual(post.text, PostsPagesTests.post.text)
 
     def test_cache_index_page(self):
         """Кеш сохраняется при удаление поста
@@ -302,39 +302,46 @@ class PostsPagesTests(TestCase):
                 self.assertIsInstance(form_field, expected)
         self.assertTrue(response.context.get('is_edit'))
 
-    """Я понял задание так, что мы проверяем пост автора
-    в ленте у пользователя
-    на странице follow_index. Мы во view follow_index передаем в контекст
-    посты и значит для проверки должны достать их из контекста и сравнить
-    с постом автора на кого подписаны. Ранее я тестировал follow_index
-    только в тесте проверки
-    на корректный шаблон.
-    Не понимаю как тестировать согласно замечанию."""
     def test_follow_page_show_correct_context_follower(self):
         """Запись появляется в ленте тех, кто подписан на автора."""
+        user = User.objects.create_user(username='follower')
+        author = User.objects.create_user(username='following')
+        Follow.objects.create(user=user, author=author)
+        post_author = Post.objects.create(
+            author=author,
+            text='Пост автора',
+            group=PostsPagesTests.group
+        )
+        self.authorized_client.force_login(user)
         response = self.authorized_client.get(
             reverse(self.follow_page[1])
         )
         context_page = response.context.get('page_obj').object_list
-        post_author_following = Post.objects.filter(
-            author__following__user=PostsPagesTests.user
-        )
-        post = context_page[0]
-        self.assertEqual(*context_page, *post_author_following)
-        self.assertEqual(post.author, PostsPagesTests.author)
-        self.assertEqual(post.group, PostsPagesTests.group)
+        post_context = context_page[0]
+        self.assertEqual(post_context.author, author)
+        self.assertEqual(post_context.group, post_author.group)
         self.assertEqual(
-            post.pub_date, PostsPagesTests.post.pub_date
+            post_context.pub_date, post_author.pub_date
         )
-        self.assertEqual(post.text, PostsPagesTests.post.text)
+        self.assertEqual(post_context.text, post_author.text)
 
     def test_follow_page_show_correct_context_unfollower(self):
         """Запись не появляется в ленте тех, кто не подписан на автора."""
-        response = self.authorized_client_2.get(
+        user = User.objects.create_user(username='follower')
+        author = User.objects.create_user(username='following')
+        Follow.objects.create(user=user, author=PostsPagesTests.author)
+        post_author = Post.objects.create(
+            author=author,
+            text='Пост автора',
+            group=PostsPagesTests.group
+        )
+        self.authorized_client.force_login(user)
+        response = self.authorized_client.get(
             reverse(self.follow_page[1])
         )
         context_page = response.context.get('page_obj').object_list
-        self.assertFalse(*context_page, False)
+        post_context = context_page[0]
+        self.assertNotEqual(post_context.text, post_author.text)
 
     def test_profile_follow(self):
         """Авторизованный пользователь может подписываться

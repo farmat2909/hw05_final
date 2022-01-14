@@ -56,7 +56,6 @@ def profile(request, username):
     if request.user.is_authenticated and request.user != username:
         following = author.following.filter(user=request.user)
         context['following'] = following
-        return render(request, template, context)
     return render(request, template, context)
 
 
@@ -148,10 +147,9 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     """Подписка на автора."""
-    follower = get_object_or_404(User, username=request.user)
     following = get_object_or_404(User, username=username)
     if following != request.user:
-        Follow.objects.get_or_create(user=follower, author=following)
+        Follow.objects.get_or_create(user=request.user, author=following)
         return redirect('posts:follow_index')
     return redirect('posts:profile', username)
 
@@ -159,8 +157,7 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     """Отписаться от автора."""
-    follower = get_object_or_404(User, username=request.user)
     following = get_object_or_404(User, username=username)
-    author = get_object_or_404(Follow, user=follower, author=following)
+    author = get_object_or_404(Follow, user=request.user, author=following)
     author.delete()
     return redirect('posts:profile', username)
