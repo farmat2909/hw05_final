@@ -329,8 +329,7 @@ class PostsPagesTests(TestCase):
         """Запись не появляется в ленте тех, кто не подписан на автора."""
         user = User.objects.create_user(username='follower')
         author = User.objects.create_user(username='following')
-        Follow.objects.create(user=user, author=PostsPagesTests.author)
-        post_author = Post.objects.create(
+        Post.objects.create(
             author=author,
             text='Пост автора',
             group=PostsPagesTests.group
@@ -340,8 +339,7 @@ class PostsPagesTests(TestCase):
             reverse(self.follow_page[1])
         )
         context_page = response.context.get('page_obj').object_list
-        post_context = context_page[0]
-        self.assertNotEqual(post_context.text, post_author.text)
+        self.assertFalse(context_page, False)
 
     def test_profile_follow(self):
         """Авторизованный пользователь может подписываться
@@ -352,6 +350,9 @@ class PostsPagesTests(TestCase):
             reverse(self.profile_follow[0], args=[self.profile_follow[1]]),
             follow=True
         )
+        subscription = Follow.objects.last()
+        self.assertEqual(subscription.author, PostsPagesTests.author)
+        self.assertEqual(subscription.user, PostsPagesTests.user_2)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(Follow.objects.count(), count_follow + 1)
         self.assertRedirects(
